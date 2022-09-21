@@ -5,8 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Rare Pepe</title>
     <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
 
     <style type="text/css">
+        .custom-font { font-family: 'Great Vibes', cursive; }
+        .form-divider { font-size: 36pt; text-transform: uppercase; }
         .card { width: 12rem; }
         .card h5 { font-size: 1.10rem; }
         .popover-body img { width: auto; max-width: 100%; }
@@ -20,13 +25,30 @@
 
         <form>
             <div class="container mb-5">
-                <div class="mb-2">
-                    <label for="btcAddress" class="form-label"><strong>Check address</strong></label>
-                    <!-- Using Hal Finneys address from the first BTC tx as a placeholder :-) -->
-                    <input type="text" required class="form-control" id="btcAddress" placeholder="1Q2TWHE3GMdB6BZKafqwxXtWAWgFt5Jvm3">
-                </div>
-                <div class="col-auto">
-                    <button type="submit" class="btn btn-primary mb-3">Submit</button>
+                <div class="row">
+                    <div class="col-md-5">
+                        <div class="mb-2">
+                            <label for="btcAddress" class="form-label"><strong>Check address</strong></label>
+                            <!-- Using Hal Finneys address from the first BTC tx as a placeholder :-) -->
+                            <input type="text" required class="form-control" id="btcAddress" placeholder="1Q2TWHE3GMdB6BZKafqwxXtWAWgFt5Jvm3">
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary btn-balances mb-3">Check balances</button>
+                        </div>
+                    </div>
+                    <div class="col-md-2 d-flex flex-wrap justify-content-center">
+                        <div class="pt-3 custom-font form-divider">- or -</div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="mb-2">
+                            <label for="compareAddress" class="form-label"><strong>Compare to this address</strong></label>
+                            <!-- Using Hal Finneys address from the first BTC tx as a placeholder :-) -->
+                            <input type="text" class="form-control" id="compareAddress" placeholder="1Q2TWHE3GMdB6BZKafqwxXtWAWgFt5Jvm3">
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary btn-compare mb-3">Compare balances</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </form>
@@ -19586,8 +19608,6 @@
             const get_balances = (address, page = 1) => fetch(`${API_URL}balances/${address}/${page}`).then((response) => response.json())
 
             const get_all_balances = async (address) => {
-                result.innerHTML = 'Loading balances..'
-
                 let balances = [], pepe_balances = [], missing_balances = []
 
                 const address_info = await get_address(address)
@@ -19618,8 +19638,10 @@
                     }
                 })
 
-                result.innerHTML = `<h4>This address contains ${pepe_balances.length}/1774 (${parseFloat(pepe_balances.length / 1774 * 100).toFixed(2)} %) Rare Pepe cards!</h4>`
-                
+                return [pepe_balances, missing_balances]
+            }
+
+            const get_table_html = pepe_balances => {
                 let html = 
                     `<table id="balances" class="table mb-5">
                         <thead>
@@ -19675,7 +19697,52 @@
                     `</tbody>
                     </table>`
                 
-                result.innerHTML += html
+                return html                
+            }
+
+            const compare_balances = async (address, compareAddress) => {
+                result.innerHTML = 'Loading balances for both addresses..'
+
+                const [source_balances] = await get_all_balances(address)
+                const [destination_balances] = await get_all_balances(compareAddress)
+                
+                let missing_balances = []
+
+                destination_balances.forEach(balance => {
+                    const { asset, quantity } = balance
+                    const hit = source_balances.filter(c => c.asset === asset)[0]
+
+                    if(!hit) {
+                        missing_balances.push(balance)
+                    }
+                })
+
+                result.innerHTML = `<h4>Address ${compareAddress.substr(0, 6)}.. has ${missing_balances.length} Rare Pepe cards that address ${address.substr(0, 6)}.. doesn't have yet</h4>`
+                result.innerHTML += get_table_html(missing_balances)
+                
+                new Tablesort(document.getElementById('balances'))
+
+                document.querySelectorAll('[data-bs-toggle="popover"]')
+                    .forEach(popover => {
+                        let html = `<img src="${popover.getAttribute('data-bs-content')}" />`
+
+                        new bootstrap.Popover(popover, {
+                            animation: false,
+                            content: html,
+                            html: true,
+                            placement: 'bottom',
+                            trigger: 'hover'
+                        })
+                    })                
+            }
+
+            const check_balances = async (address) => {
+                result.innerHTML = 'Loading balances..'
+
+                const [pepe_balances, missing_balances] = await get_all_balances(address)
+
+                result.innerHTML = `<h4>Address ${address} contains ${pepe_balances.length}/1774 (${parseFloat(pepe_balances.length / 1774 * 100).toFixed(2)} %) Rare Pepe cards!</h4>`
+                result.innerHTML += get_table_html(pepe_balances)
 
                 new Tablesort(document.getElementById('balances'))
 
@@ -19693,7 +19760,7 @@
                     })
 
                 if(showMissingBalances && missing_balances.length) {
-                    result_missing.innerHTML += `<h4>This address is missing ${missing_balances.length}/1774 (${parseFloat(missing_balances.length / 1774 * 100).toFixed(2)} %) Rare Pepe cards</h4>`
+                    result_missing.innerHTML += `<h4>Address ${address} is missing ${missing_balances.length}/1774 (${parseFloat(missing_balances.length / 1774 * 100).toFixed(2)} %) Rare Pepe cards</h4>`
                 
                     let html = 
                         `<table id="missing_balances" class="table">
@@ -19759,7 +19826,7 @@
                         console.log(`${params.address} and ${address} are the same, no need to update the query param`)
                     }
 
-                    get_all_balances(address)
+                    check_balances(address)
                 } else if(address !== '') {
                     result.innerHTML = `<div class="alert alert-warning" role="alert">
                         This isn't a valid BTC/XCP address
@@ -19767,20 +19834,53 @@
                 }
             }
 
+            function validateCompareAddress(address, compareAddress) {
+                if(checkAddress(address) && checkAddress(compareAddress)) {
+                    if(params?.address !== address || params?.compare !== compareAddress) {
+                        window.history.pushState('', '', `?address=${address}&compare=${compareAddress}`)
+                    }
+
+                    compare_balances(address, compareAddress)
+                } else if(address !== '' && compareAddress !== '') {
+                    result.innerHTML = `<div class="alert alert-warning" role="alert">
+                        One of these isn't a valid BTC/XCP address
+                    </div>`
+                }
+            }
+
             if(params?.address) {
                 document.querySelector('#btcAddress').value = params.address
 
-                validateAddress(params.address)
+                if(params?.compare) {
+                    document.querySelector('#compareAddress').value = params.compare
+    
+                    validateCompareAddress(params.address, params.compare)
+                } else {
+                    validateAddress(params.address)
+                }
             }
-
-            form.querySelector('.btn').addEventListener('click', event => {
+            
+            form.querySelector('.btn-balances').addEventListener('click', event => {
                 result.innerHTML = ''
+                result_missing.innerHTML = ''
 
                 const address = document.querySelector('#btcAddress').value
 
                 event.preventDefault()
 
                 validateAddress(address)
+            })
+
+            form.querySelector('.btn-compare').addEventListener('click', event => {
+                result.innerHTML = ''
+                result_missing.innerHTML = ''
+
+                const address = document.querySelector('#btcAddress').value
+                const compareAddress = document.querySelector('#compareAddress').value
+
+                event.preventDefault()
+
+                validateCompareAddress(address, compareAddress)
             })
         </script>        
     </body>
