@@ -16,6 +16,8 @@
         .card h5 { font-size: 1.10rem; }
         .popover-body img { width: auto; max-width: 100%; }
     </style>
+
+    <script src="js/bech32-js.js"></script>
 </head>
     <body>
         <div class="container mb-3">
@@ -19826,7 +19828,7 @@
             })
 
             function validateAddress(address) {
-                if(checkAddress(address)) {
+                if(checkAddress(address) || checkbech32(address) === 'OK') {
                     if(params?.address !== address) {
                         window.history.pushState('', '', `?address=${address}`)
                     } else {
@@ -19842,7 +19844,7 @@
             }
 
             function validateCompareAddress(address, compareAddress) {
-                if(checkAddress(address) && checkAddress(compareAddress)) {
+                if((checkAddress(address) || checkbech32(address) === 'OK') && (checkAddress(compareAddress) || checkbech32(compareAddress) === 'OK')) {
                     if(params?.address !== address || params?.compare !== compareAddress) {
                         window.history.pushState('', '', `?address=${address}&compare=${compareAddress}`)
                     }
