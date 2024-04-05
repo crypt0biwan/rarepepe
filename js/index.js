@@ -181,6 +181,7 @@ const check_balances = async (address) => {
             `<table id="missing_balances" class="table">
                 <thead>
                     <tr>
+                        <th scope="col">ID</th>
                         <th scope="col">Name</th>
                         <th class="text-end" style="padding-right: 20px;" scope="col">Series</th>
                         <th class="text-end" style="padding-right: 20px;" scope="col">Card #</th>
@@ -191,11 +192,14 @@ const check_balances = async (address) => {
             <tbody>`
         
         missing_balances.sort((a,b) => (a.name > b.name) ? 1 : ((b.name > a.name) ? -1 : 0)).forEach(bal => {
-            const { name: asset, quantity: supply, series, order, burned, img_url, emblem_vault } = bal
+            const { name: asset, quantity: supply, series, order, burned, img_url, index, emblem_vault } = bal
             const active_supply = supply - burned
 
             html += 
             `<tr>
+                <td data-sort="${(index.toString().padStart(2, '0')).padStart(4, '0')}">
+                    ${index}
+                </td>
                 <td data-sort="${asset}">
                     <span data-bs-toggle="popover" data-bs-title="${asset} image" data-bs-content="${img_url}">🏞</span>
                     ${asset}
