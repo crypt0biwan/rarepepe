@@ -1,4 +1,4 @@
-const API_URL = 'https://xchain.io/api/'
+const API_URL = 'https://tokenscan.io/api/'
 let cards = []
 const showMissingBalances = true
 
